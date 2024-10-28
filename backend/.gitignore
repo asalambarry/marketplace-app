@@ -1,0 +1,54 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env
+*.env
+
+
+uploads/
+
+
+# Log files
+*.log
+
+# Compiled TypeScript files
+dist/
+build/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# JSON files (if configuration or sensitive data)
+*.json
+
+# YAML configuration files
+*.yml
+*.yaml
+
+# Documentation files
+*.md
+*.txt
+
+# Data files
+*.csv
+
+# Office documents
+*.pdf
+*.docx
+*.doc
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# Archives
+*.zip
+*.rar
+*.tar
+*.tar.gz
+
+# IDE-specific files
+.vscode/
+.idea/
