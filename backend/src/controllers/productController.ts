@@ -1,290 +1,369 @@
+
+// // 2eme version
 // import { Request, Response } from 'express';
 // import path from 'path';
-// import Product from '../models/Product';
+// import Product, { VALID_CATEGORIES } from '../models/Product';
 // import { geocodeAddress } from '../services/geocodingService';
+
+// interface ProductFilters {
+//   category?: string;
+//   'price.amount'?: {
+//     $gte?: number;
+//     $lte?: number;
+//   };
+// }
+
 // export const createProduct = async (req: Request, res: Response) => {
-//     try {
-//         const productData = req.body;
-
-//         // Géocodage de l'adresse
-//         if (productData.address) {
-//           try {
-//             const geoResult = await geocodeAddress(productData.address);
-//             productData.location = {
-//               type: 'Point',
-//               coordinates: geoResult.coordinates,
-//               address: geoResult.formattedAddress
-//             };
-//           } catch (error) {
-//             console.error('Erreur de géocodage:', error);
-//             productData.location = {
-//               type: 'Point',
-//               coordinates: [0, 0],
-//               address: productData.address
-//             };
-//           }
-//         }
-//     // Gestion des photos
-//     if (req.files && Array.isArray(req.files)) {
-//         productData.photos = req.files.map(file => {
-//           // Créer une URL relative pour accéder aux images
-//           return `/uploads/${path.basename(file.path)}`;
-//         });
-//       }
-
-//       const product = await Product.create(productData);
-//       res.status(201).json(product);
-//     } catch (error) {
-//       console.error('Erreur lors de la création du produit:', error);
-//       if (error instanceof Error) {
-//         res.status(500).json({
-//           message: 'Erreur lors de la création du produit',
-//           error: error.message
-//         });
-//       } else {
-//         res.status(500).json({
-//           message: 'Erreur lors de la création du produit',
-//           error: 'Une erreur inconnue est survenue'
-//         });
-//       }
-//     }
-//   };
-//   export const getProducts = async (req: Request, res: Response) => {
-//     try {
-//       const products = await Product.find().sort({ createdAt: -1 });
-//       res.json(products);
-//     } catch (error: unknown) {
-//       if (error instanceof Error) {
-//         res.status(500).json({ message: error.message });
-//       } else {
-//         res.status(500).json({ message: 'Une erreur inconnue est survenue' });
-//       }
-//     }
-//   };
-
-// export const getProductById = async (req: Request, res: Response) => {
 //   try {
-//     const product = await Product.findById(req.params.id);
-//     if (!product) {
-//       return res.status(404).json({ message: 'Produit non trouvé' });
-//     }
-//     res.json(product);
-//   } catch (error: unknown) {
-//     if (error instanceof Error) {
-//       res.status(500).json({ message: error.message });
-//     } else {
-//       res.status(500).json({ message: 'Une erreur inconnue est survenue' });
-//     }
-//   }
-// };
+//     const productData = {
+//       ...req.body,
+//       price: {
+//         amount: Number(req.body.price?.amount || req.body['price[amount]']),
+//         isNegotiable: req.body.price?.isNegotiable || req.body['price[isNegotiable]'] === 'true'
+//       }
+//     };
 
-
-// 1ere version
-
-// import { Request, Response } from 'express';
-// import path from 'path';
-// import Product from '../models/Product';
-// import { geocodeAddress } from '../services/geocodingService';
-
-// export const createProduct = async (req: Request, res: Response) => {
-//     try {
-//         const productData = {
-//           ...req.body,
-//           price: {
-//             amount: Number(req.body.price?.amount || req.body['price[amount]']),
-//             isNegotiable: req.body.price?.isNegotiable || req.body['price[isNegotiable]'] === 'true'
-//           }
-//         };
-
-//         // Géocodage de l'adresse avec Google Maps
-//         if (productData.address) {
-//           try {
-//             const geoResult = await geocodeAddress(productData.address);
-//             productData.location = {
-//               type: 'Point',
-//               coordinates: geoResult.coordinates,
-//               address: geoResult.formattedAddress // Utilise l'adresse formatée de Google
-//             };
-//           } catch (error) {
-//             return res.status(400).json({
-//               message: 'Erreur lors de la géolocalisation de l\'adresse',
-//               error: (error instanceof Error ? error.message : 'Une erreur inconnue est survenue')
-//             });
-//           }
-//         }
-//     // Gestion des photos
-//     if (req.files && Array.isArray(req.files)) {
-//       productData.photos = req.files.map(file => {
-//         // Créer une URL relative pour accéder aux images
-//         return `/uploads/${path.basename(file.path)}`;
-//       });
-//     }
-
-//     // Log des données avant la création
-//     console.log('Données à sauvegarder:', productData);
-
-//     // Validation des données requises
 //     if (!productData.title || !productData.description || !productData.category) {
 //       return res.status(400).json({
-//         message: 'Tous les champs requis doivent être remplis'
+//         message: 'Tous les champs requis doivent être remplis',
+//         required: ['title', 'description', 'category']
 //       });
 //     }
 
-//     // Validation du prix
-//     if (!productData.price?.amount || isNaN(productData.price.amount)) {
+//     if (!VALID_CATEGORIES.includes(productData.category.toLowerCase() as any)) {
 //       return res.status(400).json({
-//         message: 'Le prix doit être un nombre valide'
+//         message: 'Catégorie invalide',
+//         validCategories: VALID_CATEGORIES
 //       });
 //     }
+
+//     if (isNaN(productData.price.amount) || productData.price.amount <= 0) {
+//       return res.status(400).json({
+//         message: 'Le prix doit être un nombre positif'
+//       });
+//     }
+
+//     if (productData.address && productData.address.trim()) {
+//       try {
+//         const geoResult = await geocodeAddress(productData.address);
+//         productData.location = {
+//           type: 'Point',
+//           coordinates: geoResult.coordinates,
+//           address: geoResult.formattedAddress
+//         };
+//       } catch (error) {
+//         if (error instanceof Error && error.message.includes('non trouvée')) {
+//           return res.status(400).json({
+//             message: 'Adresse non trouvée',
+//             error: error.message
+//           });
+//         }
+//         return res.status(400).json({
+//           message: 'Erreur lors de la géolocalisation de l\'adresse',
+//           error: error instanceof Error ? error.message : 'Erreur inconnue'
+//         });
+//       }
+//     }
+
+//     if (req.files && Array.isArray(req.files)) {
+//       productData.photos = req.files.map(file => `/uploads/${path.basename(file.path)}`);
+//     } else {
+//       productData.photos = [];
+//     }
+
+//     console.log('Données à sauvegarder:', JSON.stringify(productData, null, 2));
 
 //     const product = await Product.create(productData);
 //     res.status(201).json(product);
 //   } catch (error) {
-//     console.error('Erreur détaillée:', error); // Pour le débogage
-//     if (error instanceof Error) {
-//       res.status(500).json({
-//         message: 'Erreur lors de la création du produit',
-//         error: error.message,
-//         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-//       });
-//     } else {
-//       res.status(500).json({
-//         message: 'Erreur lors de la création du produit',
-//         error: 'Une erreur inconnue est survenue'
-//       });
-//     }
+//     console.error('Erreur création produit:', error);
+//     res.status(500).json({
+//       message: 'Erreur lors de la création du produit',
+//       error: error instanceof Error ? error.message : 'Erreur inconnue',
+//       details: process.env.NODE_ENV === 'development' ? error : undefined
+//     });
 //   }
 // };
 
-// // Ajout d'une fonction pour rechercher par proximité
-// export const searchNearby = async (req: Request, res: Response) => {
-//     try {
-//       const { address, maxDistance = 5000 } = req.query; // maxDistance en mètres
+// // Obtenir tous les produits avec filtres
+// export const getProducts = async (req: Request, res: Response) => {
+//   try {
+//     const { category, minPrice, maxPrice } = req.query;
+//     const filters: ProductFilters = {};
 
-//       if (!address) {
-//         return res.status(400).json({ message: 'Une adresse est requise' });
+//     // Application des filtres
+//     if (category && typeof category === 'string') {
+//       if (VALID_CATEGORIES.includes(category.toLowerCase() as any)) {
+//         filters.category = category.toLowerCase();
+//       } else {
+//         return res.status(400).json({
+//           message: 'Catégorie invalide',
+//           validCategories: VALID_CATEGORIES
+//         });
+//       }
+//     }
+
+//     // Filtre de prix
+//     if (minPrice || maxPrice) {
+//       filters['price.amount'] = {};
+//       if (minPrice) filters['price.amount'].$gte = Number(minPrice);
+//       if (maxPrice) filters['price.amount'].$lte = Number(maxPrice);
+//     }
+
+//     const products = await Product.find(filters)
+//       .sort({ createdAt: -1 })
+//       .select('-__v')
+//       .lean();
+
+//     res.json(products);
+//   } catch (error) {
+//     console.error('Erreur récupération produits:', error);
+//     res.status(500).json({
+//       message: 'Erreur lors de la récupération des produits',
+//       error: error instanceof Error ? error.message : 'Erreur inconnue'
+//     });
+//   }
+// };
+
+// // Obtenir un produit par ID
+// export const getProductById = async (req: Request, res: Response) => {
+//   try {
+//     const product = await Product.findById(req.params.id)
+//       .select('-__v')
+//       .lean();
+
+//     if (!product) {
+//       return res.status(404).json({ message: 'Produit non trouvé' });
+//     }
+
+//     // Ajout des URLs complètes pour les images
+//     const enrichedProduct = {
+//       ...product,
+//       imageUrls: product.photos.map(photo =>
+//         `${req.protocol}://${req.get('host')}${photo}`
+//       )
+//     };
+
+//     res.json(enrichedProduct);
+//   } catch (error) {
+//     console.error('Erreur récupération produit:', error);
+//     res.status(500).json({
+//       message: 'Erreur lors de la récupération du produit',
+//       error: error instanceof Error ? error.message : 'Erreur inconnue'
+//     });
+//   }
+// };
+// // Mise à jour d'un produit
+// export const updateProduct = async (req: Request, res: Response) => {
+//     try {
+//       const productId = req.params.id;
+//       const updateData = { ...req.body };
+
+//       // Gestion du prix
+//       if (updateData.price) {
+//         updateData.price = {
+//           amount: Number(updateData.price?.amount || updateData['price[amount]']),
+//           isNegotiable: updateData.price?.isNegotiable || updateData['price[isNegotiable]'] === 'true'
+//         };
+//       }
+//       // Géocodage si nouvelle adresse
+//     if (updateData.address) {
+//         try {
+//           const geoResult = await geocodeAddress(updateData.address);
+//           updateData.location = {
+//             type: 'Point',
+//             coordinates: geoResult.coordinates,
+//             address: geoResult.formattedAddress
+//           };
+//         } catch (error) {
+//           return res.status(400).json({
+//             message: 'Erreur lors de la géolocalisation de la nouvelle adresse',
+//             error: error instanceof Error ? error.message : 'Erreur inconnue'
+//           });
+//         }
 //       }
 
-//       // Convertir l'adresse en coordonnées
-//       const geoResult = await geocodeAddress(String(address));
+//       // Gestion des nouvelles photos
+//       if (req.files && Array.isArray(req.files)) {
+//         const newPhotos = req.files.map(file => `/uploads/${path.basename(file.path)}`);
+//         // Ajouter aux photos existantes ou remplacer
+//         updateData.photos = updateData.replacePhotos ? newPhotos : [...(updateData.photos || []), ...newPhotos];
+//       }
+//       const updatedProduct = await Product.findByIdAndUpdate(
+//         productId,
+//         updateData,
+//         { new: true, runValidators: true }
+//       );
 
-//       // Recherche des produits à proximité
-//       const products = await Product.find({
-//         location: {
-//           $near: {
-//             $geometry: {
-//               type: 'Point',
-//               coordinates: geoResult.coordinates
-//             },
-//             $maxDistance: Number(maxDistance)
+//       if (!updatedProduct) {
+//         return res.status(404).json({ message: 'Produit non trouvé' });
+//       }
+
+//       res.json(updatedProduct);
+//     } catch (error) {
+//       console.error('Erreur mise à jour produit:', error);
+//       res.status(500).json({
+//         message: 'Erreur lors de la mise à jour du produit',
+//         error: error instanceof Error ? error.message : 'Erreur inconnue'
+//       });
+//     }
+//   };
+//   // Suppression d'un produit
+// export const deleteProduct = async (req: Request, res: Response) => {
+//     try {
+//       const productId = req.params.id;
+//       const product = await Product.findByIdAndDelete(productId);
+
+//       if (!product) {
+//         return res.status(404).json({ message: 'Produit non trouvé' });
+//       }
+
+//       // Suppression des photos associées
+//       if (product.photos && product.photos.length > 0) {
+//         product.photos.forEach(photo => {
+//           const photoPath = path.join(__dirname, '../../uploads', path.basename(photo));
+//           // Utiliser le module fs importé
+//           const fs = require('fs');
+//           fs.promises.unlink(photoPath).catch((err: any) => {
+//             console.error('Erreur suppression photo:', err);
+//           });
+//         });
+//       }
+
+//       res.json({ message: 'Produit supprimé avec succès' });
+//     } catch (error) {
+//       console.error('Erreur suppression produit:', error);
+//       res.status(500).json({
+//         message: 'Erreur lors de la suppression du produit',
+//         error: error instanceof Error ? error.message : 'Erreur inconnue'
+//       });
+//     }
+//   };
+//   // Recherche avancée de produits
+// export const searchProducts = async (req: Request, res: Response) => {
+//     try {
+//       const {
+//         query,
+//         category,
+//         minPrice,
+//         maxPrice,
+//         sortBy = 'createdAt',
+//         sortOrder = 'desc',
+//         page = 1,
+//         limit = 10
+//       } = req.query;
+
+//       const filter: any = {};
+
+//       // Recherche textuelle
+//       if (query) {
+//         filter.$or = [
+//           { title: { $regex: query, $options: 'i' } },
+//           { description: { $regex: query, $options: 'i' } }
+//         ];
+//       }
+//        // Filtres
+//     if (category) {
+//         filter.category = category;
+//       }
+
+//       if (minPrice || maxPrice) {
+//         filter['price.amount'] = {};
+//         if (minPrice) filter['price.amount'].$gte = Number(minPrice);
+//         if (maxPrice) filter['price.amount'].$lte = Number(maxPrice);
+//       }
+
+//       // Pagination
+//       const skip = (Number(page) - 1) * Number(limit);
+
+//       // Construction du tri
+//       const sort: any = {};
+//       sort[String(sortBy)] = sortOrder === 'desc' ? -1 : 1;
+
+//       const [products, total] = await Promise.all([
+//         Product.find(filter)
+//           .sort(sort)
+//           .skip(skip)
+//           .limit(Number(limit))
+//           .select('-__v')
+//           .lean(),
+//         Product.countDocuments(filter)
+//       ]);
+//        // Enrichir les URLs des images
+//     const enrichedProducts = products.map(product => ({
+//         ...product,
+//         imageUrls: product.photos.map(photo =>
+//           `${req.protocol}://${req.get('host')}${photo}`
+//         )
+//       }));
+
+//       res.json({
+//         results: enrichedProducts,
+//         metadata: {
+//           total,
+//           page: Number(page),
+//           totalPages: Math.ceil(total / Number(limit)),
+//           hasMore: skip + products.length < total
+//         }
+//       });
+//     } catch (error) {
+//       console.error('Erreur recherche produits:', error);
+//       res.status(500).json({
+//         message: 'Erreur lors de la recherche des produits',
+//         error: error instanceof Error ? error.message : 'Erreur inconnue'
+//       });
+//     }
+//   };
+//   // Statistiques des produits
+// export const getProductStats = async (req: Request, res: Response) => {
+//     try {
+//       const stats = await Product.aggregate([
+//         {
+//           $group: {
+//             _id: '$category',
+//             count: { $sum: 1 },
+//             avgPrice: { $avg: '$price.amount' },
+//             minPrice: { $min: '$price.amount' },
+//             maxPrice: { $max: '$price.amount' }
+//           }
+//         },
+//         {
+//           $project: {
+//             category: '$_id',
+//             count: 1,
+//             avgPrice: { $round: ['$avgPrice', 2] },
+//             minPrice: 1,
+//             maxPrice: 1,
+//             _id: 0
 //           }
 //         }
-//       }).select('-__v');
+//       ]);
+//       const total = await Product.countDocuments();
+//       const withLocation = await Product.countDocuments({
+//         'location.coordinates': { $exists: true }
+//       });
 
-//       res.json(products);
+//       res.json({
+//         categoryStats: stats,
+//         overall: {
+//           total,
+//           withLocation,
+//           withoutLocation: total - withLocation
+//         }
+//       });
 //     } catch (error) {
+//       console.error('Erreur statistiques produits:', error);
 //       res.status(500).json({
-//         message: 'Erreur lors de la recherche par proximité',
+//         message: 'Erreur lors de la récupération des statistiques',
 //         error: error instanceof Error ? error.message : 'Erreur inconnue'
 //       });
 //     }
 //   };
 
-// export const getProducts = async (req: Request, res: Response) => {
-//   try {
-//     // Ajout des filtres de recherche
-//     const filters: any = {};
-//     const { category, minPrice, maxPrice } = req.query;
 
-//     if (category) {
-//       filters.category = category;
-//     }
-
-//     if (minPrice || maxPrice) {
-//       filters.price = {};
-//       if (minPrice) filters.price.$gte = Number(minPrice);
-//       if (maxPrice) filters.price.$lte = Number(maxPrice);
-//     }
-
-//     const products = await Product.find(filters)
-//       .sort({ createdAt: -1 })
-//       .select('-__v'); // Exclure le champ __v
-
-//     res.json(products);
-//   } catch (error: unknown) {
-//     if (error instanceof Error) {
-//       res.status(500).json({ message: error.message });
-//     } else {
-//       res.status(500).json({ message: 'Une erreur inconnue est survenue' });
-//     }
-//   }
-// };
-
-// export const getProductById = async (req: Request, res: Response) => {
-//   try {
-//     const product = await Product.findById(req.params.id)
-//       .select('-__v'); // Exclure le champ __v
-
-//     if (!product) {
-//       return res.status(404).json({ message: 'Produit non trouvé' });
-//     }
-
-//     // Ajouter des informations supplémentaires si nécessaire
-//     const enrichedProduct = {
-//       ...product.toObject(),
-//       imageUrls: product.photos.map(photo => `${req.protocol}://${req.get('host')}${photo}`),
-//     };
-
-//     res.json(enrichedProduct);
-//   } catch (error: unknown) {
-//     if (error instanceof Error) {
-//       res.status(500).json({ message: error.message });
-//     } else {
-//       res.status(500).json({ message: 'Une erreur inconnue est survenue' });
-//     }
-//   }
-// };
-
-// // Ajout d'une nouvelle fonction pour la recherche de produits
-// export const searchProducts = async (req: Request, res: Response) => {
-//   try {
-//     const { query, category, minPrice, maxPrice } = req.query;
-//     const searchCriteria: any = {};
-
-//     if (query) {
-//       searchCriteria.$or = [
-//         { title: new RegExp(String(query), 'i') },
-//         { description: new RegExp(String(query), 'i') }
-//       ];
-//     }
-
-//     if (category) {
-//       searchCriteria.category = category;
-//     }
-
-//     if (minPrice || maxPrice) {
-//       searchCriteria['price.amount'] = {};
-//       if (minPrice) searchCriteria['price.amount'].$gte = Number(minPrice);
-//       if (maxPrice) searchCriteria['price.amount'].$lte = Number(maxPrice);
-//     }
-
-//     const products = await Product.find(searchCriteria)
-//       .sort({ createdAt: -1 })
-//       .select('-__v');
-
-//     res.json(products);
-//   } catch (error: unknown) {
-//     if (error instanceof Error) {
-//       res.status(500).json({ message: error.message });
-//     } else {
-//       res.status(500).json({ message: 'Une erreur inconnue est survenue' });
-//     }
-//   }
-// };
-
-// 2eme version
 import { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs/promises';
 import Product, { VALID_CATEGORIES } from '../models/Product';
 import { geocodeAddress } from '../services/geocodingService';
 
@@ -294,8 +373,25 @@ interface ProductFilters {
     $gte?: number;
     $lte?: number;
   };
+  $or?: Array<{
+    [key: string]: {
+      $regex: unknown;
+      $options: string;
+    };
+  }>;
 }
 
+// Fonctions utilitaires
+const validatePrice = (price: any): boolean => {
+  const amount = Number(price?.amount || price['amount']);
+  return !isNaN(amount) && amount > 0;
+};
+
+const formatImageUrls = (photos: string[], req: Request): string[] => {
+  return photos.map(photo => `${req.protocol}://${req.get('host')}${photo}`);
+};
+
+// Création d'un produit
 export const createProduct = async (req: Request, res: Response) => {
   try {
     const productData = {
@@ -306,27 +402,32 @@ export const createProduct = async (req: Request, res: Response) => {
       }
     };
 
-    if (!productData.title || !productData.description || !productData.category) {
+    // Validation de base
+    if (!productData.title?.trim() || !productData.description?.trim() || !productData.category) {
       return res.status(400).json({
         message: 'Tous les champs requis doivent être remplis',
         required: ['title', 'description', 'category']
       });
     }
 
-    if (!VALID_CATEGORIES.includes(productData.category.toLowerCase() as any)) {
+    // Normalisation de la catégorie
+    productData.category = productData.category.toLowerCase();
+    if (!VALID_CATEGORIES.includes(productData.category as any)) {
       return res.status(400).json({
         message: 'Catégorie invalide',
         validCategories: VALID_CATEGORIES
       });
     }
 
-    if (isNaN(productData.price.amount) || productData.price.amount <= 0) {
+    // Validation du prix
+    if (!validatePrice(productData.price)) {
       return res.status(400).json({
         message: 'Le prix doit être un nombre positif'
       });
     }
 
-    if (productData.address && productData.address.trim()) {
+    // Géocodage de l'adresse
+    if (productData.address?.trim()) {
       try {
         const geoResult = await geocodeAddress(productData.address);
         productData.location = {
@@ -335,12 +436,6 @@ export const createProduct = async (req: Request, res: Response) => {
           address: geoResult.formattedAddress
         };
       } catch (error) {
-        if (error instanceof Error && error.message.includes('non trouvée')) {
-          return res.status(400).json({
-            message: 'Adresse non trouvée',
-            error: error.message
-          });
-        }
         return res.status(400).json({
           message: 'Erreur lors de la géolocalisation de l\'adresse',
           error: error instanceof Error ? error.message : 'Erreur inconnue'
@@ -348,22 +443,23 @@ export const createProduct = async (req: Request, res: Response) => {
       }
     }
 
+    // Gestion des photos
     if (req.files && Array.isArray(req.files)) {
       productData.photos = req.files.map(file => `/uploads/${path.basename(file.path)}`);
     } else {
       productData.photos = [];
     }
 
-    console.log('Données à sauvegarder:', JSON.stringify(productData, null, 2));
-
     const product = await Product.create(productData);
-    res.status(201).json(product);
+    res.status(201).json({
+      ...product.toObject(),
+      imageUrls: formatImageUrls(product.photos, req)
+    });
   } catch (error) {
     console.error('Erreur création produit:', error);
     res.status(500).json({
       message: 'Erreur lors de la création du produit',
-      error: error instanceof Error ? error.message : 'Erreur inconnue',
-      details: process.env.NODE_ENV === 'development' ? error : undefined
+      error: error instanceof Error ? error.message : 'Erreur inconnue'
     });
   }
 };
@@ -398,7 +494,12 @@ export const getProducts = async (req: Request, res: Response) => {
       .select('-__v')
       .lean();
 
-    res.json(products);
+    const enrichedProducts = products.map(product => ({
+      ...product,
+      imageUrls: formatImageUrls(product.photos, req)
+    }));
+
+    res.json(enrichedProducts);
   } catch (error) {
     console.error('Erreur récupération produits:', error);
     res.status(500).json({
@@ -407,77 +508,231 @@ export const getProducts = async (req: Request, res: Response) => {
     });
   }
 };
-
 // Obtenir un produit par ID
 export const getProductById = async (req: Request, res: Response) => {
-  try {
-    const product = await Product.findById(req.params.id)
-      .select('-__v')
-      .lean();
+    try {
+      const product = await Product.findById(req.params.id)
+        .select('-__v')
+        .lean();
 
-    if (!product) {
-      return res.status(404).json({ message: 'Produit non trouvé' });
-    }
+      if (!product) {
+        return res.status(404).json({ message: 'Produit non trouvé' });
+      }
 
-    // Ajout des URLs complètes pour les images
-    const enrichedProduct = {
-      ...product,
-      imageUrls: product.photos.map(photo =>
-        `${req.protocol}://${req.get('host')}${photo}`
-      )
-    };
+      const enrichedProduct = {
+        ...product,
+        imageUrls: formatImageUrls(product.photos, req)
+      };
 
-    res.json(enrichedProduct);
-  } catch (error) {
-    console.error('Erreur récupération produit:', error);
-    res.status(500).json({
-      message: 'Erreur lors de la récupération du produit',
-      error: error instanceof Error ? error.message : 'Erreur inconnue'
-    });
-  }
-};
-
-// Recherche de produits à proximité
-export const searchNearby = async (req: Request, res: Response) => {
-  try {
-    const { address } = req.query;
-    const maxDistance = 5000; // 5km fixe
-
-    if (!address || typeof address !== 'string') {
-      return res.status(400).json({
-        message: 'Une adresse valide est requise'
+      res.json(enrichedProduct);
+    } catch (error) {
+      console.error('Erreur récupération produit:', error);
+      res.status(500).json({
+        message: 'Erreur lors de la récupération du produit',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
       });
     }
+  };
 
-    const geoResult = await geocodeAddress(address);
+  // Mise à jour d'un produit
+  export const updateProduct = async (req: Request, res: Response) => {
+    try {
+      const productId = req.params.id;
+      const updateData = { ...req.body };
 
-    const products = await Product.find({
-      location: {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: geoResult.coordinates
-          },
-          $maxDistance: maxDistance
+      // Validation du prix si présent
+      if (updateData.price) {
+        updateData.price = {
+          amount: Number(updateData.price?.amount || updateData['price[amount]']),
+          isNegotiable: updateData.price?.isNegotiable || updateData['price[isNegotiable]'] === 'true'
+        };
+
+        if (!validatePrice(updateData.price)) {
+          return res.status(400).json({
+            message: 'Le prix doit être un nombre positif'
+          });
         }
       }
-    })
-    .select('-__v')
-    .lean();
 
-    res.json({
-      results: products,
-      metadata: {
-        searchLocation: geoResult.formattedAddress,
-        radius: maxDistance,
-        count: products.length
+      // Validation de la catégorie si présente
+      if (updateData.category) {
+        updateData.category = updateData.category.toLowerCase();
+        if (!VALID_CATEGORIES.includes(updateData.category as any)) {
+          return res.status(400).json({
+            message: 'Catégorie invalide',
+            validCategories: VALID_CATEGORIES
+          });
+        }
       }
-    });
-  } catch (error) {
-    console.error('Erreur recherche proximité:', error);
-    res.status(500).json({
-      message: 'Erreur lors de la recherche par proximité',
-      error: error instanceof Error ? error.message : 'Erreur inconnue'
-    });
-  }
-};
+
+      // Géocodage si nouvelle adresse
+      if (updateData.address?.trim()) {
+        try {
+          const geoResult = await geocodeAddress(updateData.address);
+          updateData.location = {
+            type: 'Point',
+            coordinates: geoResult.coordinates,
+            address: geoResult.formattedAddress
+          };
+        } catch (error) {
+          return res.status(400).json({
+            message: 'Erreur lors de la géolocalisation de la nouvelle adresse',
+            error: error instanceof Error ? error.message : 'Erreur inconnue'
+          });
+        }
+      }
+
+      // Gestion des photos
+      if (req.files && Array.isArray(req.files)) {
+        const newPhotos = req.files.map(file => `/uploads/${path.basename(file.path)}`);
+        const existingProduct = await Product.findById(productId);
+
+        if (!existingProduct) {
+          return res.status(404).json({ message: 'Produit non trouvé' });
+        }
+
+        updateData.photos = updateData.replacePhotos
+          ? newPhotos
+          : [...existingProduct.photos, ...newPhotos];
+      }
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        productId,
+        updateData,
+        { new: true, runValidators: true }
+      ).lean();
+
+      if (!updatedProduct) {
+        return res.status(404).json({ message: 'Produit non trouvé' });
+      }
+
+      res.json({
+        ...updatedProduct,
+        imageUrls: formatImageUrls(updatedProduct.photos, req)
+      });
+    } catch (error) {
+      console.error('Erreur mise à jour produit:', error);
+      res.status(500).json({
+        message: 'Erreur lors de la mise à jour du produit',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  };
+
+  // Suppression d'un produit
+  export const deleteProduct = async (req: Request, res: Response) => {
+    try {
+      const productId = req.params.id;
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        return res.status(404).json({ message: 'Produit non trouvé' });
+      }
+
+      // Suppression des photos associées
+      if (product.photos && product.photos.length > 0) {
+        await Promise.all(product.photos.map(async (photo) => {
+          const photoPath = path.join(__dirname, '../../uploads', path.basename(photo));
+          try {
+            await fs.unlink(photoPath);
+          } catch (err) {
+            console.error('Erreur suppression photo:', err);
+          }
+        }));
+      }
+
+      await Product.findByIdAndDelete(productId);
+      res.json({ message: 'Produit supprimé avec succès' });
+    } catch (error) {
+      console.error('Erreur suppression produit:', error);
+      res.status(500).json({
+        message: 'Erreur lors de la suppression du produit',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  };
+
+  // Recherche de produits
+  export const searchProducts = async (req: Request, res: Response) => {
+    try {
+      const {
+        query,
+        category,
+        minPrice,
+        maxPrice,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+        page = '1',
+        limit = '10'
+      } = req.query;
+
+      const filter: ProductFilters = {};
+
+      // Recherche textuelle
+      if (query && typeof query === 'string') {
+        filter.$or = [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } }
+        ];
+      }
+
+      // Filtre par catégorie
+      if (category && typeof category === 'string') {
+        if (VALID_CATEGORIES.includes(category.toLowerCase() as any)) {
+          filter.category = category.toLowerCase();
+        } else {
+          return res.status(400).json({
+            message: 'Catégorie invalide',
+            validCategories: VALID_CATEGORIES
+          });
+        }
+      }
+
+      // Filtre de prix
+      if (minPrice || maxPrice) {
+        filter['price.amount'] = {};
+        if (minPrice) filter['price.amount'].$gte = Number(minPrice);
+        if (maxPrice) filter['price.amount'].$lte = Number(maxPrice);
+      }
+
+      // Pagination
+      const pageNum = Math.max(1, Number(page));
+      const limitNum = Math.min(50, Math.max(1, Number(limit))); // Maximum 50 items par page
+      const skip = (pageNum - 1) * limitNum;
+
+      // Construction du tri
+      const sort: { [key: string]: 1 | -1 } = {};
+      sort[String(sortBy)] = sortOrder === 'desc' ? -1 : 1;
+
+      const [products, total] = await Promise.all([
+        Product.find(filter)
+          .sort(sort)
+          .skip(skip)
+          .limit(limitNum)
+          .select('-__v')
+          .lean(),
+        Product.countDocuments(filter)
+      ]);
+
+      const enrichedProducts = products.map(product => ({
+        ...product,
+        imageUrls: formatImageUrls(product.photos, req)
+      }));
+
+      res.json({
+        results: enrichedProducts,
+        metadata: {
+          total,
+          page: pageNum,
+          totalPages: Math.ceil(total / limitNum),
+          hasMore: skip + products.length < total
+        }
+      });
+    } catch (error) {
+      console.error('Erreur recherche produits:', error);
+      res.status(500).json({
+        message: 'Erreur lors de la recherche des produits',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  };

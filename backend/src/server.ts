@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
 import connectDB from './config/db';
-import { errorHandler } from './middleware/errorHandler';
 import productRoutes from './routes/productRoutes';
 
 dotenv.config();
