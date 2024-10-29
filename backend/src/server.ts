@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
 import connectDB from './config/db';
+import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 
 // Routes
+app.use('/api/auth', authRoutes);  // Routes d'authentification
 app.use('/api/products', productRoutes);
 // app.use('/api', errorHandler);
 
